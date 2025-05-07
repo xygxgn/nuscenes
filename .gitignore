@@ -1,5 +1,2 @@
-data/sets/nuscenes/samples
-data/sets/nuscenes/sweeps
-data/sets/nuscenes/v1.0-mini
-data/sets/nuscenes/.v1.0-mini.txt
+data/sets/nuscenes
 v1.0-mini.tgz
