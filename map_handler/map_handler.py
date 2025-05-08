@@ -9,8 +9,10 @@ import matplotlib.pyplot as plt
 from const import CLASS2LABEL
 import os
 from typing import Tuple, List
+from const import MAP_ORIGIN
+from geo import TopocentricConverter
 
-class NuscMapHandler(object):
+class MapHandler(object):
     """
     nuscenes map handler
     """
@@ -18,6 +20,7 @@ class NuscMapHandler(object):
                  dataroot: str,
                  patch_size: Tuple,
                  canvas_size: Tuple,
+                 sd_map_path: str = './data/sets/osm',
                  line_classes: List[str] = ['road_divider', 'lane_divider'],
                  ped_crossing_classes: List[str] = ['ped_crossing'],
                  contour_classes: List = ['road_segment', 'lane'],
@@ -44,7 +47,7 @@ class NuscMapHandler(object):
         self.polygon_classes = contour_classes           # ['road_segment', 'lane'] 
         self.nusc_maps = {map_name: NuScenesMap(dataroot=self.data_root, map_name=map_name) for map_name in self.nusc_maps}
         self.map_explorer = {map_name: NuScenesMapExplorer(self.nusc_maps[map_name]) for map_name in self.nusc_maps}
-        
+        self.sd_map_path = sd_map_path
         # self.nusc_maps = {}
         # self.map_explorer = {}
         # for map_name in self.nusc_maps:
@@ -314,13 +317,59 @@ class NuscMapHandler(object):
         num_valid = len(sampled_points)
         return sampled_points, num_valid
 
-    def write(self, output_floder: str = './output/nuscenes'):
+
+    def convert_osm(self, 
+                maps: List = list(MAP_ORIGIN), 
+                options: List[str] = ['living_street', 'road'], 
+                save_map: bool = False, 
+                output_floder: str = './output/osm'):
+        '''
+        Args:
+            maps: list of sd_maps to be converted
+        '''
+        converted_sd_maps = dict()
+        for map_name in maps:
+            # convert
+            lat, lon, alt = MAP_ORIGIN[map_name]
+            converter = TopocentricConverter(lat, lon, alt)
+            sd_map = gpd.read_file(os.path.join(self.sd_map_path, '{}.shp'.format(map_name)))
+            sd_map = sd_map[sd_map['type'].isin(options)]
+            sd_map_topo_list = [
+                [converter.to_topocentric(lon, lat, 0.)[:2] for lat, lon in coords]
+                for coords in sd_map.geometry.apply(lambda x: list(x.coords))
+            ]
+            converted_sd_maps[map_name] = MultiLineString(sd_map_topo_list)
+            if save_map:
+                fig, ax = plt.subplots(figsize=(10, 10))
+                lines = LineCollection([list(line.coords) for line in converted_sd_maps[map_name]],
+                                        colors='red',
+                                        linewidths=1)
+                ax.add_collection(lines)
+                ax.axis('equal')
+                ax.grid(True)
+                output_path = os.path.join(output_floder, '{}.png'.format(map_name))
+                plt.savefig(output_path)
+                plt.close()
+        return converted_sd_maps
+
+    def write(self, output_floder: str = './output/nuscenes', save_map: bool = True):
+        options = [
+            'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 'residential', # road
+            'trunk_link', 'primary_link', 'secondary_link', 'tertiary_link'# road link
+            'living_street',  'road',  # Special road  'service'
+        ]
+        converted_sd_maps = handler.convert_osm(maps=list(self.nusc_maps), options=options, save_map=False)
         for map_name in self.nusc_maps:
-            fig, ax = self.nusc_maps[map_name].render_layers(self.nusc_maps[map_name].non_geometric_layers, figsize=1)
-            ax.axis('equal')
-            output_path = os.path.join(output_floder, '{}.png'.format(map_name))
-            plt.savefig(output_path)
-            plt.close()
+            if save_map:
+                fig, ax = self.nusc_maps[map_name].render_layers(self.nusc_maps[map_name].non_geometric_layers, figsize=1)
+                lines = LineCollection([list(line.coords) for line in converted_sd_maps[map_name]],
+                                        colors='red')
+                ax.add_collection(lines)
+                ax.axis('equal')
+                ax.grid(True)
+                output_path = os.path.join(output_floder, '{}.png'.format(map_name))
+                plt.savefig(output_path)
+                plt.close()
 
 if __name__ == '__main__':
     xbound = [-60.0, 60.0, 0.3] #120m*60m, bev_size:400*200
@@ -331,5 +380,5 @@ if __name__ == '__main__':
     patch_w = xbound[1] - xbound[0]
     canvas_h = int(patch_h / ybound[2])
     canvas_w = int(patch_w / xbound[2])
-    handler = NuscMapHandler(dataroot='./data/sets/nuscenes', patch_size=(patch_h, patch_w), canvas_size=(canvas_h, canvas_w))
+    handler = MapHandler(dataroot='./data/sets/nuscenes', patch_size=(patch_h, patch_w), canvas_size=(canvas_h, canvas_w))
     handler.write(output_floder='./output/nuscenes')

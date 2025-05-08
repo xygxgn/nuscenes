@@ -26,36 +26,39 @@ class OsmMapHandler(object):
     def download(self):
         pass
 
-    def convert(self, maps: List = list(MAP_ORIGIN), options: List[str] = ['living_street', 'road']):
+    def convert(self, 
+                maps: List = list(MAP_ORIGIN), 
+                options: List[str] = ['living_street', 'road'], 
+                save_map: bool = False, 
+                output_floder: str = './output/osm'):
         '''
         Args:
             maps: list of sd_maps to be converted
         '''
         converted_sd_maps = dict()
         for map_name in maps:
+            # convert
             lat, lon, alt = MAP_ORIGIN[map_name]
-            sd_map = gpd.read_file(os.path.join(self.sd_map_path, '{}.shp'.format(map_name)))
             converter = TopocentricConverter(lat, lon, alt)
+            sd_map = gpd.read_file(os.path.join(self.sd_map_path, '{}.shp'.format(map_name)))
             sd_map = sd_map[sd_map['type'].isin(options)]
             sd_map_topo_list = [
                 [converter.to_topocentric(lon, lat, 0.)[:2] for lat, lon in coords]
                 for coords in sd_map.geometry.apply(lambda x: list(x.coords))
             ]
             converted_sd_maps[map_name] = MultiLineString(sd_map_topo_list)
+            if save_map:
+                fig, ax = plt.subplots(figsize=(10, 10))
+                lines = LineCollection([list(line.coords) for line in converted_sd_maps[map_name]],
+                                        colors='red',
+                                        linewidths=1)
+                ax.add_collection(lines)
+                ax.axis('equal')
+                ax.grid(True)
+                output_path = os.path.join(output_floder, '{}.png'.format(map_name))
+                plt.savefig(output_path)
+                plt.close()
         return converted_sd_maps
-
-    def write(self, converted_sd_maps: dict, output_floder: str = './output/osm'):
-        for map_name in converted_sd_maps:
-            fig, ax = plt.subplots(figsize=(10, 10))
-            lines = LineCollection([list(line.coords) for line in converted_sd_maps[map_name]],
-                                    colors='red',
-                                    linewidths=1)
-            ax.add_collection(lines)
-            ax.axis('equal')
-            ax.grid(True)
-            output_path = os.path.join(output_floder, '{}.png'.format(map_name))
-            plt.savefig(output_path)
-            plt.close()
 
 if __name__ == '__main__':
     handler = OsmMapHandler(sd_map_path='./data/sets/osm')
@@ -64,5 +67,4 @@ if __name__ == '__main__':
         'trunk_link', 'primary_link', 'secondary_link', 'tertiary_link'# road link
         'living_street',  'road',  # Special road  'service'
     ]
-    converted_sd_maps = handler.convert(maps=list(MAP_ORIGIN), options=options)
-    handler.write(converted_sd_maps)
+    converted_sd_maps = handler.convert(maps=list(MAP_ORIGIN), options=options, save_map=False)
