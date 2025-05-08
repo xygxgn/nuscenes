@@ -1,2 +1,4 @@
 data/sets/nuscenes
 v1.0-mini.tgz
+cache
+*.png
