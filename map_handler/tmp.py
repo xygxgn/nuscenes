@@ -7,7 +7,7 @@ import geopandas as gpd
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from .const import CLASS2LABEL
-from .geo import TopocentricConverter
+from ..osm.convert import TopocentricConverter
 import os 
 
 class VectorizedLocalMap(object):

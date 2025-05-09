@@ -1,7 +1,3 @@
-"""
-This file is copied from https://github.com/mapillary/OpenSfM/blob/main/opensfm/geo.py
-"""
-
 # pyre-unsafe
 from typing import Tuple
 

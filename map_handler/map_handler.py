@@ -1,6 +1,7 @@
 import numpy as np
 from nuscenes.map_expansion.map_api import NuScenesMap, NuScenesMapExplorer
 from nuscenes.eval.common.utils import quaternion_yaw, Quaternion
+from nuscenes import NuScenes
 from shapely import affinity, ops
 from shapely.geometry import LineString, box, MultiPolygon, MultiLineString
 import geopandas as gpd
@@ -10,11 +11,11 @@ from const import CLASS2LABEL
 import os
 from typing import Tuple, List
 from const import MAP_ORIGIN
-from geo import TopocentricConverter
+from osm.convert import TopocentricConverter
 
 class MapHandler(object):
     """
-    nuscenes map handler
+    map handler
     """
     def __init__(self,
                  dataroot: str,
@@ -318,6 +319,22 @@ class MapHandler(object):
         return sampled_points, num_valid
 
 
+    def download_osm(self):
+        import osmnx as ox
+        nusc = NuScenes(version='v1.0-mini', dataroot='data/sets/nuscenes', verbose=True)
+        my_scene = nusc.scene[0]
+        log = nusc.get('log', my_scene['log_token'])
+        map_data = nusc.get('map', log['map_token'])
+        print(list(map_data))
+        print(f"地图边界框(左下角): {map_data['map_bbox'][0]}")  # [经度, 纬度]
+        print(f"地图边界框(右上角): {map_data['map_bbox'][1]}")  # [经度, 纬度]
+
+        # tags = {'building': True}
+        # buildings = ox.geometries_from_place("San Francisco, California, USA", tags=tags)
+        # buildings.plot()
+        # plt.show()
+
+
     def convert_osm(self, 
                 maps: List = list(MAP_ORIGIN), 
                 options: List[str] = ['living_street', 'road'], 
@@ -381,4 +398,5 @@ if __name__ == '__main__':
     canvas_h = int(patch_h / ybound[2])
     canvas_w = int(patch_w / xbound[2])
     handler = MapHandler(dataroot='./data/sets/nuscenes', patch_size=(patch_h, patch_w), canvas_size=(canvas_h, canvas_w))
-    handler.write(output_floder='./output/nuscenes')
+    # handler.write(output_floder='./output/nuscenes')
+    handler.download_osm()
