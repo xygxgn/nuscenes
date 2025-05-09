@@ -85,21 +85,23 @@ def get_latlon(
 
 
 def get_osm(
-    boundary_box: BoundaryBox,
+    boundary_box: Optional[BoundaryBox],
     cache_path: Optional[Path] = None,
     overwrite: bool = False,
 ) -> Dict[str, Any]:
     """
     Args:
-        boundary_box: the image EXIF metadata
-        cache_path: the prior latitude and longitude
-        overwrite: the prior address
+        boundary_box: the boundary of the map
+        cache_path: path to save the map
+        overwrite: overwrite the cache_path
     Returns:
         lat, lon and alt (read if available)
     """
     if not overwrite and cache_path is not None and cache_path.is_file():
         return json.loads(cache_path.read_text())
 
+    if not isinstance(boundary_box, BoundaryBox):
+        return get_osm(BoundaryBox())
     # (min_latitude, min_longitude, max_latitude, max_longitude)
     (bottom, left), (top, right) = boundary_box.min_, boundary_box.max_
     # (min_longitude, min_latitude, max_longitude, max_latitude)
