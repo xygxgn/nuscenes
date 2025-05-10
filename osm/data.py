@@ -169,6 +169,9 @@ class MapData:
 
     @classmethod
     def from_osm(cls, osm: OSMData):
+        """
+        get nodes, lines and areas from osm
+        """
         self = cls()
 
         for node in filter(filter_node, osm.nodes.values()):

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List
+from typing import List, Optional
 
 from reader import OSMData, OSMElement, OSMNode, OSMWay
 
@@ -17,7 +17,7 @@ def parse_levels(string: str) -> List[float]:
         return []
 
 
-def filter_level(elem: OSMElement):
+def filter_level(elem: OSMElement) -> bool:
     level = elem.tags.get("level")
     if level is not None:
         levels = parse_levels(level)
@@ -40,7 +40,7 @@ def filter_node(node: OSMNode):
     return len(node.tags.keys() - IGNORE_TAGS) > 0 and filter_level(node)
 
 
-def is_area(way: OSMWay):
+def is_area(way: OSMWay) -> bool:
     if way.nodes[0] != way.nodes[-1]:
         return False
     if way.tags.get("area") == "no":
@@ -64,15 +64,15 @@ def is_area(way: OSMWay):
     return False
 
 
-def filter_area(way: OSMWay):
+def filter_area(way: OSMWay) -> bool:
     return len(way.tags.keys() - IGNORE_TAGS) > 0 and is_area(way) and filter_level(way)
 
 
-def filter_way(way: OSMWay):
+def filter_way(way: OSMWay) -> bool:
     return not filter_area(way) and way.tags != {} and filter_level(way)
 
 
-def parse_node(tags):
+def parse_node(tags) -> Optional[str]:
     keys = tags.keys()
     for key in [
         "amenity",
@@ -92,7 +92,7 @@ def parse_node(tags):
     return None
 
 
-def parse_area(tags):
+def parse_area(tags) -> Optional[str]:
     if "building" in tags:
         group = "building"
         kind = tags["building"]
@@ -122,7 +122,7 @@ def parse_area(tags):
     return None
 
 
-def parse_way(tags):
+def parse_way(tags) -> Optional[str]:
     keys = tags.keys()
     for key in ["highway", "barrier", "natural"]:
         if key in keys:
@@ -130,7 +130,7 @@ def parse_way(tags):
     return None
 
 
-def match_to_group(label, patterns):
+def match_to_group(label, patterns) -> Optional[str]:
     for group, pattern in patterns.items():
         if re.match(pattern, label):
             return group

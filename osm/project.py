@@ -8,8 +8,8 @@ from convert import TopocentricConverter
 
 class BoundaryBox:
     def __init__(self, min_: np.ndarray, max_: np.ndarray):
-        self.min_ = np.asarray(min_) # [lat_min, lon_min]
-        self.max_ = np.asarray(max_) # [lat_max, lon_max]
+        self.min_ = np.asarray(min_) # [x_min, y_min] or [lat_min, lon_min]
+        self.max_ = np.asarray(max_) # [x_max, y_max] or [lat_max, lon_max]
         assert np.all(self.min_ <= self.max_)
 
     @classmethod
@@ -97,6 +97,9 @@ class Projection:
             )
 
     def project(self, geo, return_z=False):
+        """
+        from lla to topocentric
+        """
         if isinstance(geo, BoundaryBox):
             return BoundaryBox(*self.project(np.stack([geo.min_, geo.max_])))
         geo = np.asarray(geo)
@@ -116,6 +119,9 @@ class Projection:
         return np.stack([x, y] + ([z] if return_z else []), -1)
 
     def unproject(self, xy, return_z=False):
+        """
+        from topocentric to lla
+        """
         if isinstance(xy, BoundaryBox):
             return BoundaryBox(*self.unproject(np.stack([xy.min_, xy.max_])))
         xy = np.asarray(xy)

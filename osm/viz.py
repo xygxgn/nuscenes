@@ -74,7 +74,7 @@ class GeoPlotter:
             dict(
                 sourcetype="image",
                 source=raster,
-                coordinates=corners,
+                coordinates=corners, # right_bottom ==> right_top ==> left_top ==> left_bottom
                 below=below,
                 **kwargs,
             )
@@ -98,8 +98,8 @@ map_colors = {
     "cycleway": (0, 251, 255),
     "path": (8, 237, 0),
     "road": (255, 0, 0),
-    "tree_row": (0, 92, 9),
     "busway": (255, 128, 0),
+    "tree_row": (0, 92, 9),
     "void": [int(255 * 1.0)] * 3,
 }
 

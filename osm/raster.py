@@ -10,10 +10,13 @@ from parser import Groups
 
 
 class Canvas:
+    """
+    used to draw raster map
+    """
     def __init__(self, bbox: BoundaryBox, ppm: float):
         self.bbox = bbox
-        self.ppm = ppm
-        self.scaling = bbox.size * ppm
+        self.ppm = ppm # pixel_per_meter
+        self.scaling = bbox.size * ppm # canvas size
         self.w, self.h = np.ceil(self.scaling).astype(int)
         self.clear()
 
@@ -22,7 +25,7 @@ class Canvas:
 
     def to_uv(self, xy: np.ndarray):
         xy = self.bbox.normalize(xy)
-        xy[..., 1] = 1 - xy[..., 1]
+        xy[..., 1] = 1 - xy[..., 1] # y = 1 - y
         s = self.scaling
         if isinstance(xy, torch.Tensor):
             s = torch.from_numpy(s).to(xy)
@@ -64,7 +67,7 @@ def render_raster_masks(
     canvas: Canvas,
 ) -> Dict[str, np.ndarray]:
     all_groups = Groups.areas + Groups.ways + Groups.nodes
-    masks = {k: np.zeros((canvas.h, canvas.w), np.uint8) for k in all_groups}
+    masks = {k: np.zeros((canvas.h, canvas.w), np.uint8) for k in all_groups} # masks for all_groups
 
     for area in areas:
         canvas.raster = masks[area.group]
@@ -87,6 +90,10 @@ def render_raster_masks(
 
 
 def mask_to_idx(group2mask: Dict[str, np.ndarray], groups: List[str]) -> np.ndarray:
+    """
+    Stacking different channels of masks together to form a index mask.
+    Different index corresponding to a drifferent group in groups.
+    """
     masks = np.stack([group2mask[k] for k in groups]) > 0
     void = ~np.any(masks, 0)
     idx = np.argmax(masks, 0)

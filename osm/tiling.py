@@ -47,9 +47,12 @@ class MapIndex:
 
 
 def bbox_to_slice(bbox: BoundaryBox, canvas: Canvas):
-    uv_min = np.ceil(canvas.to_uv(bbox.min_)).astype(int)
-    uv_max = np.ceil(canvas.to_uv(bbox.max_)).astype(int)
-    slice_ = (slice(uv_max[1], uv_min[1]), slice(uv_min[0], uv_max[0]))
+    # uv_min = np.ceil(canvas.to_uv(bbox.min_)).astype(int) # [u_min, v_max]
+    # uv_max = np.ceil(canvas.to_uv(bbox.max_)).astype(int) # [u_max, v_min]
+    # slice_ = (slice(uv_max[1], uv_min[1]), slice(uv_min[0], uv_max[0]))
+    u_min, v_max = np.ceil(canvas.to_uv(bbox.min_)).astype(int) # [u_min, v_max]
+    u_max, v_min = np.ceil(canvas.to_uv(bbox.max_)).astype(int) # [u_max, v_min]
+    slice_ = (slice(v_min, v_max), slice(u_min, u_max))
     return slice_
 
 
@@ -90,7 +93,10 @@ class TileManager:
         ppm: int,
         path: Optional[Path] = None,
         tile_size: int = 128,
-    ):
+    ) -> "TileManager":
+        """
+        get nodes, lines and areas from osm in bbox
+        """
         bbox_osm = projection.unproject(bbox)
         if path is not None and path.is_file():
             osm = OSMData.from_file(path)
@@ -138,8 +144,8 @@ class TileManager:
             for j in range(ij_min[1], ij_max[1] + 1):
                 tile = self.tiles[i, j]
                 bbox_select = tile.bbox & bbox
-                slice_query = bbox_to_slice(bbox_select, canvas)
-                slice_tile = bbox_to_slice(bbox_select, tile)
+                slice_query = bbox_to_slice(bbox_select, canvas) # to be draw
+                slice_tile = bbox_to_slice(bbox_select, tile) # used for draw
                 raster[(slice(None),) + slice_query] = tile.raster[
                     (slice(None),) + slice_tile
                 ]

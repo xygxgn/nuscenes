@@ -177,7 +177,7 @@ class OSMData:
         self.box: BoundaryBox = None
 
     @classmethod
-    def from_dict(cls, structure: Dict[str, Any]):
+    def from_dict(cls, structure: Dict[str, Any]) -> "OSMData":
         data = cls()
         bounds = structure.get("bounds")
         if bounds is not None:
@@ -202,13 +202,13 @@ class OSMData:
         return data
 
     @classmethod
-    def from_json(cls, path: Path):
+    def from_json(cls, path: Path) -> "OSMData":
         with path.open() as fid:
             structure = json.load(fid)
         return cls.from_dict(structure)
 
     @classmethod
-    def from_xml(cls, path: Path):
+    def from_xml(cls, path: Path) -> "OSMData":
         root = etree.parse(str(path)).getroot()
         structure = {"elements": []}
         from tqdm import tqdm
@@ -263,7 +263,7 @@ class OSMData:
         return cls.from_dict(structure)
 
     @classmethod
-    def from_file(cls, path: Path):
+    def from_file(cls, path: Path) -> "OSMData":
         ext = path.suffix
         if ext == ".json":
             return cls.from_json(path)
@@ -291,6 +291,7 @@ class OSMData:
         self.relations[relation.id_] = relation
 
     def add_xy_to_nodes(self, proj: Projection):
+        """Add topocentric xy to all nodes."""
         nodes = list(self.nodes.values())
         if len(nodes) == 0:
             return
